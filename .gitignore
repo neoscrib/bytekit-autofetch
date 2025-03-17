@@ -1,0 +1,7 @@
+coverage
+.vscode
+*.iml
+.idea
+node_modules
+dist
+tsconfig.tsbuildinfo
