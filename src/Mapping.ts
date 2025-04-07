@@ -31,7 +31,7 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping = ({
     const target = Object.getPrototypeOf(thisArg);
     const clientOptions: IClientOptions = Reflect.getMetadata(ClientConstants.ClientOptions, target);
     if (!clientOptions) {
-      throw new Error(`Client options not defined for ${target}`);
+      throw new Error(`Client options not defined for ${target.constructor.name}`);
     }
 
     const {
@@ -44,7 +44,7 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping = ({
     const id = await executeBefore(thisArg, before, init, clientOptions);
 
     const cacheName = cache ?? clientOptions.cache;
-    const cacheStore = cacheName ? await caches?.open(cacheName) : undefined;
+    const cacheStore = cacheName ? await globalThis.caches.open(cacheName) : undefined;
     const request = new Request(url.toString(), init);
     let resp: Response;
 
@@ -57,7 +57,6 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping = ({
             case "return":
               return;
             case "fetch":
-            default:
               fromCache = false;
               resp = await adaptor(request);
           }
@@ -74,12 +73,12 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping = ({
 
     await executeAfter(thisArg, after, resp, id, clientOptions);
 
-    const isJson = resp.headers.get("content-type")?.includes("application/json");
+    const contentType = resp.headers.get("content-type");
+    const isJson = contentType === "application/json" || contentType?.startsWith("application/json;");
 
     if (resp.ok || resp.redirected) {
-      if (!fromCache && cacheStore && typeof resp.clone === "function") {
-        const clone = resp.clone();
-        await cacheStore.put(resp.url, clone);
+      if (!fromCache && cacheStore) {
+        await cacheStore.put(resp.url, resp.clone());
       }
 
       return response ? resp : blob ? resp.blob() : stream ? resp.body : isJson ? resp.json() : resp.text();
@@ -104,7 +103,7 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
     throw new Error("Only a single body param may be used.");
   }
 
-  const exclusivity = Number(formParams?.size > 0) + Number(urlEncodedFormParams?.size > 0) + Number(bodyParams?.size > 0)
+  const exclusivity = Number((formParams?.size ?? 0) > 0) + Number((urlEncodedFormParams?.size ?? 0) > 0) + Number((bodyParams?.size ?? 0) > 0)
   if (exclusivity > 1) {
     throw new Error("Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination.");
   }
@@ -115,6 +114,7 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
   let body: FormData | URLSearchParams | string | Blob | undefined;
 
   for (let i = 0; i < args.length; i++) {
+    let processed = false;
     const current = args[i];
 
     if (pathParams?.has(i)) {
@@ -124,6 +124,7 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
         throw new Error(`Path param '${name}' not found in path spec`);
       }
       path = replacementPath;
+      processed = true;
     }
 
     if (queryParams?.has(i)) {
@@ -133,6 +134,7 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
       } else if ((options.required ?? true) || (current !== null && current !== undefined)) {
         query[options.name] = current;
       }
+      processed = true;
     }
 
     if (headerParams?.has(i)) {
@@ -142,6 +144,7 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
       } else {
         headers.append(name, current);
       }
+      processed = true;
     }
 
     if (formParams?.has(i)) {
@@ -151,10 +154,10 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
       const name = formParams.get(i)!;
       body.append(name, current);
 
-      const contentType = produces ?? "multipart/form-data";
       if (!headers.has("content-type")) {
-        headers.set("content-type", contentType);
+        headers.set("content-type", produces ?? "multipart/form-data");
       }
+      processed = true;
     }
 
     if (urlEncodedFormParams?.has(i)) {
@@ -164,10 +167,10 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
       const name = urlEncodedFormParams.get(i)!;
       body.append(name, current);
 
-      const contentType = produces ?? "application/x-www-form-urlencoded";
       if (!headers.has("content-type")) {
-        headers.set("content-type", contentType);
+        headers.set("content-type", produces ?? "application/x-www-form-urlencoded");
       }
+      processed = true;
     }
 
     if (bodyParams?.has(i)) {
@@ -189,14 +192,19 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
         contentType = "text/plain";
       }
 
-      contentType = produces ?? contentType;
-      if (contentType && !headers.has("content-type")) {
-        headers.set("content-type", contentType);
+      if (!headers.has("content-type")) {
+        headers.set("content-type", produces ?? contentType);
       }
+      processed = true;
     }
 
     if (initOptions?.has(i) && current) {
       inits.push(current);
+      processed = true;
+    }
+
+    if (!processed) {
+      throw new Error(`Unknown parameter at index ${i}`);
     }
   }
 
