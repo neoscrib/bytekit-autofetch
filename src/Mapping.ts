@@ -7,105 +7,187 @@ import IMappingOptions = ByteKit.AutoFetch.IMappingOptions;
 
 const caches = globalThis.caches;
 
-const Mapping: typeof ByteKit.AutoFetch.Mapping = ({
-                                                     method,
-                                                     value,
-                                                     blob,
-                                                     stream,
-                                                     response,
-                                                     produces,
-                                                     consumes,
-                                                     throws = true,
-                                                     cache,
-                                                     fromCache,
-                                                     cacheQueryOptions,
-                                                     cacheMissBehavior = "fetch",
-                                                     interceptors,
-                                                     before,
-                                                     after,
-                                                     adaptor = (input) => globalThis.fetch(input)
-                                                   }) => (t, propertyKey, descriptor) => {
-  (descriptor.value as any) = async function<T>(...args: any[]): Promise<T | Blob | Body | ReadableStream<Uint8Array<ArrayBufferLike>> | Response | string | undefined | null> {
-    // @ts-expect-error this is bound to the decorated class instance when called
-    const thisArg = this;
-    const target = Object.getPrototypeOf(thisArg);
-    const clientOptions: IClientOptions = Reflect.getMetadata(ClientConstants.ClientOptions, target);
-    if (!clientOptions) {
-      throw new Error(`Client options not defined for ${target.constructor.name}`);
-    }
+const Mapping: typeof ByteKit.AutoFetch.Mapping =
+  ({
+    method,
+    value,
+    blob,
+    stream,
+    response,
+    produces,
+    consumes,
+    throws = true,
+    cache,
+    fromCache,
+    cacheQueryOptions,
+    cacheMissBehavior = "fetch",
+    interceptors,
+    before,
+    after,
+    adaptor = (input) => globalThis.fetch(input)
+  }) =>
+  (t, propertyKey, descriptor) => {
+    (descriptor.value as any) = async function <T>(
+      ...args: any[]
+    ): Promise<
+      | T
+      | Blob
+      | Body
+      | ReadableStream<Uint8Array<ArrayBufferLike>>
+      | Response
+      | string
+      | undefined
+      | null
+    > {
+      // @ts-expect-error this is bound to the decorated class instance when called
+      const thisArg = this;
+      const target = Object.getPrototypeOf(thisArg);
+      const clientOptions: IClientOptions = Reflect.getMetadata(
+        ClientConstants.ClientOptions,
+        target
+      );
+      if (!clientOptions) {
+        throw new Error(
+          `Client options not defined for ${target.constructor.name}`
+        );
+      }
 
-    const {
-      body,
-      headers,
-      inits,
-      url
-    } = processArgs(target, propertyKey, args, await clientOptions.baseUrl.call(thisArg), value, produces, consumes);
-    const init = await buildRequestInit(thisArg, interceptors, clientOptions, inits, method, headers, body);
-    const id = await executeBefore(thisArg, before, init, clientOptions);
+      const {body, headers, inits, url} = processArgs(
+        target,
+        propertyKey,
+        args,
+        await clientOptions.baseUrl(thisArg),
+        value,
+        produces,
+        consumes
+      );
+      const init = await buildRequestInit(
+        thisArg,
+        interceptors,
+        clientOptions,
+        inits,
+        method,
+        headers,
+        body
+      );
+      const id = await executeBefore(thisArg, before, init, clientOptions);
 
-    const cacheName = cache ?? clientOptions.cache;
-    const cacheStore = cacheName ? await globalThis.caches.open(cacheName) : undefined;
-    const request = new Request(url.toString(), init);
-    let resp: Response;
+      const cacheName = cache ?? clientOptions.cache;
+      const cacheStore = cacheName
+        ? await globalThis.caches.open(cacheName)
+        : undefined;
+      const request = new Request(url.toString(), init);
+      let resp: Response;
 
-    try {
-      if (fromCache) {
-        const cachedResponse = await cacheStore!.match(request, cacheQueryOptions);
+      try {
+        if (fromCache) {
+          const cachedResponse = await cacheStore!.match(
+            request,
+            cacheQueryOptions
+          );
 
-        if (!cachedResponse) {
-          switch (cacheMissBehavior) {
-            case "return":
-              return;
-            case "fetch":
-              fromCache = false;
-              resp = await adaptor(request);
+          if (!cachedResponse) {
+            switch (cacheMissBehavior) {
+              case "return":
+                return;
+              case "fetch":
+                fromCache = false;
+                resp = await adaptor(request);
+            }
+          } else {
+            resp = cachedResponse;
           }
         } else {
-          resp = cachedResponse;
+          resp = await adaptor(request);
         }
+      } catch (error) {
+        await executeAfter(thisArg, after, error as Error, id, clientOptions);
+        throw error;
+      }
+
+      await executeAfter(thisArg, after, resp, id, clientOptions);
+
+      const contentType = resp.headers.get("content-type");
+      const isJson =
+        contentType === "application/json" ||
+        contentType?.startsWith("application/json;");
+
+      if (resp.ok || resp.redirected) {
+        if (!fromCache && cacheStore) {
+          await cacheStore.put(resp.url, resp.clone());
+        }
+
+        return response
+          ? resp
+          : blob
+            ? resp.blob()
+            : stream
+              ? resp.body
+              : isJson
+                ? resp.json()
+                : resp.text();
+      } else if (throws) {
+        throw resp;
       } else {
-        resp = await adaptor(request);
+        return resp;
       }
-    } catch (error) {
-      await executeAfter(thisArg, after, error as Error, id, clientOptions);
-      throw error;
-    }
-
-    await executeAfter(thisArg, after, resp, id, clientOptions);
-
-    const contentType = resp.headers.get("content-type");
-    const isJson = contentType === "application/json" || contentType?.startsWith("application/json;");
-
-    if (resp.ok || resp.redirected) {
-      if (!fromCache && cacheStore) {
-        await cacheStore.put(resp.url, resp.clone());
-      }
-
-      return response ? resp : blob ? resp.blob() : stream ? resp.body : isJson ? resp.json() : resp.text();
-    } else if (throws) {
-      throw resp;
-    } else {
-      return resp;
-    }
+    };
   };
-};
 
-function processArgs(target: any, propertyKey: string | symbol, args: any[], baseUrl: string, path: string, produces?: string, consumes?: string) {
-  const pathParams: Map<number, string> = Reflect.getMetadata(ClientConstants.PathParams, target, propertyKey);
-  const queryParams: Map<number, string | IQueryParamOptions> = Reflect.getMetadata(ClientConstants.QueryParams, target, propertyKey);
-  const headerParams: Map<number, string> = Reflect.getMetadata(ClientConstants.HeaderParams, target, propertyKey);
-  const formParams: Map<number, string> = Reflect.getMetadata(ClientConstants.FormParams, target, propertyKey);
-  const urlEncodedFormParams: Map<number, string> = Reflect.getMetadata(ClientConstants.URLEncodedFormParams, target, propertyKey);
-  const bodyParams: Set<number> = Reflect.getMetadata(ClientConstants.BodyParams, target, propertyKey);
-  const initOptions: Set<number> = Reflect.getMetadata(ClientConstants.InitOptions, target, propertyKey);
+function processArgs(
+  target: any,
+  propertyKey: string | symbol,
+  args: any[],
+  baseUrl: string,
+  path: string,
+  produces?: string,
+  consumes?: string
+) {
+  const pathParams: Map<number, string> = Reflect.getMetadata(
+    ClientConstants.PathParams,
+    target,
+    propertyKey
+  );
+  const queryParams: Map<number, string | IQueryParamOptions> =
+    Reflect.getMetadata(ClientConstants.QueryParams, target, propertyKey);
+  const headerParams: Map<number, string> = Reflect.getMetadata(
+    ClientConstants.HeaderParams,
+    target,
+    propertyKey
+  );
+  const formParams: Map<number, string> = Reflect.getMetadata(
+    ClientConstants.FormParams,
+    target,
+    propertyKey
+  );
+  const urlEncodedFormParams: Map<number, string> = Reflect.getMetadata(
+    ClientConstants.URLEncodedFormParams,
+    target,
+    propertyKey
+  );
+  const bodyParams: Set<number> = Reflect.getMetadata(
+    ClientConstants.BodyParams,
+    target,
+    propertyKey
+  );
+  const initOptions: Set<number> = Reflect.getMetadata(
+    ClientConstants.InitOptions,
+    target,
+    propertyKey
+  );
 
   if (bodyParams?.size > 1) {
     throw new Error("Only a single body param may be used.");
   }
 
-  const exclusivity = Number((formParams?.size ?? 0) > 0) + Number((urlEncodedFormParams?.size ?? 0) > 0) + Number((bodyParams?.size ?? 0) > 0)
+  const exclusivity =
+    Number((formParams?.size ?? 0) > 0) +
+    Number((urlEncodedFormParams?.size ?? 0) > 0) +
+    Number((bodyParams?.size ?? 0) > 0);
   if (exclusivity > 1) {
-    throw new Error("Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination.");
+    throw new Error(
+      "Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination."
+    );
   }
 
   const inits: RequestInit[] = [];
@@ -131,7 +213,10 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
       const options = queryParams.get(i)!;
       if (typeof options === "string") {
         query[options] = current;
-      } else if ((options.required ?? true) || (current !== null && current !== undefined)) {
+      } else if (
+        (options.required ?? true) ||
+        (current !== null && current !== undefined)
+      ) {
         query[options.name] = current;
       }
       processed = true;
@@ -139,7 +224,10 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
 
     if (headerParams?.has(i)) {
       const name = headerParams.get(i)!;
-      if (name.toLowerCase() === "content-type" || name.toLowerCase() === "authorization") {
+      if (
+        name.toLowerCase() === "content-type" ||
+        name.toLowerCase() === "authorization"
+      ) {
         headers.set(name, current);
       } else {
         headers.append(name, current);
@@ -168,7 +256,10 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
       body.append(name, current);
 
       if (!headers.has("content-type")) {
-        headers.set("content-type", produces ?? "application/x-www-form-urlencoded");
+        headers.set(
+          "content-type",
+          produces ?? "application/x-www-form-urlencoded"
+        );
       }
       processed = true;
     }
@@ -208,7 +299,10 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
     }
   }
 
-  if (headers.get("content-type") === "multipart/form-data" && body instanceof FormData) {
+  if (
+    headers.get("content-type") === "multipart/form-data" &&
+    body instanceof FormData
+  ) {
     // delete form-data content type header -- fetch will set this for us with the proper boundary value
     headers.delete("content-type");
   }
@@ -225,22 +319,35 @@ function processArgs(target: any, propertyKey: string | symbol, args: any[], bas
   return {body, headers, inits, url};
 }
 
-async function executeBefore<T>(thisArg: T, before: IClientOptions<T>["before"] | undefined, init: RequestInit, clientOptions: IClientOptions<T>) {
+async function executeBefore<T>(
+  thisArg: T,
+  before: IClientOptions<T>["before"] | undefined,
+  init: RequestInit,
+  clientOptions: IClientOptions<T>
+) {
   const id = crypto.randomUUID();
-  await before?.call(thisArg, init, id);
-  await clientOptions.before?.call(thisArg, init, id);
+  await before?.(thisArg, init, id);
+  await clientOptions.before?.(thisArg, init, id);
   return id;
 }
 
-async function executeAfter<T>(thisArg: T, after: IClientOptions<T>["after"] | undefined, resp: Error | Response, id: string, clientOptions: IClientOptions<T>) {
-  await clientOptions.after?.call(thisArg, resp, id);
-  await after?.call(thisArg, resp, id);
+async function executeAfter<T>(
+  thisArg: T,
+  after: IClientOptions<T>["after"] | undefined,
+  resp: Error | Response,
+  id: string,
+  clientOptions: IClientOptions<T>
+) {
+  await clientOptions.after?.(thisArg, resp, id);
+  await after?.(thisArg, resp, id);
 }
 
 function mergeHeaders(a?: HeadersInit, b?: HeadersInit): Headers {
   const x = new Headers(a);
   const y = new Headers(b);
-  for (const [key, value] of (y as unknown as IterableIterator<[string, string]>)) {
+  for (const [key, value] of y as unknown as IterableIterator<
+    [string, string]
+  >) {
     const lower = key.toLowerCase();
     if (lower === "content-type" || lower === "authorization") {
       // don't overwrite existing content-type or auth headers--processArgs takes precedence
@@ -254,28 +361,49 @@ function mergeHeaders(a?: HeadersInit, b?: HeadersInit): Headers {
   return x;
 }
 
-async function buildRequestInit<T>(thisArg: T, interceptors: IMappingOptions["interceptors"], clientOptions: IClientOptions<T>, inits: RequestInit[], method?: HttpMethod, headers?: Headers, body?: FormData | URLSearchParams | string | Blob) {
-  return (await Promise.all([...interceptors ?? [], ...clientOptions.interceptors ?? []]
-    .map(item => item.call(thisArg))))
+async function buildRequestInit<T>(
+  thisArg: T,
+  interceptors: IMappingOptions["interceptors"],
+  clientOptions: IClientOptions<T>,
+  inits: RequestInit[],
+  method?: HttpMethod,
+  headers?: Headers,
+  body?: FormData | URLSearchParams | string | Blob
+) {
+  return (
+    await Promise.all(
+      [...(interceptors ?? []), ...(clientOptions.interceptors ?? [])].map(
+        (item) => item(thisArg as any)
+      )
+    )
+  )
     .concat(...inits)
-    .reduce((acc: RequestInit, cur: RequestInit) => ({
-        ...acc, ...cur,
+    .reduce(
+      (acc: RequestInit, cur: RequestInit) => ({
+        ...acc,
+        ...cur,
         headers: mergeHeaders(acc.headers, cur.headers)
       }),
-      {method, headers, body});
+      {method, headers, body}
+    );
 }
 
-const GetMapping: typeof ByteKit.AutoFetch.GetMapping = (options) => Mapping({...options, method: HttpMethod.GET});
-const PostMapping: typeof ByteKit.AutoFetch.PostMapping = (options) => Mapping({...options, method: HttpMethod.POST});
-const PutMapping: typeof ByteKit.AutoFetch.PutMapping = (options) => Mapping({...options, method: HttpMethod.PUT});
-const PatchMapping: typeof ByteKit.AutoFetch.PatchMapping = (options) => Mapping({
-  ...options,
-  method: HttpMethod.PATCH
-});
-const DeleteMapping: typeof ByteKit.AutoFetch.DeleteMapping = (options) => Mapping({
-  ...options,
-  method: HttpMethod.DELETE
-});
+const GetMapping: typeof ByteKit.AutoFetch.GetMapping = (options) =>
+  Mapping({...options, method: HttpMethod.GET});
+const PostMapping: typeof ByteKit.AutoFetch.PostMapping = (options) =>
+  Mapping({...options, method: HttpMethod.POST});
+const PutMapping: typeof ByteKit.AutoFetch.PutMapping = (options) =>
+  Mapping({...options, method: HttpMethod.PUT});
+const PatchMapping: typeof ByteKit.AutoFetch.PatchMapping = (options) =>
+  Mapping({
+    ...options,
+    method: HttpMethod.PATCH
+  });
+const DeleteMapping: typeof ByteKit.AutoFetch.DeleteMapping = (options) =>
+  Mapping({
+    ...options,
+    method: HttpMethod.DELETE
+  });
 
 export default Mapping;
 export {GetMapping, PostMapping, PutMapping, PatchMapping, DeleteMapping};

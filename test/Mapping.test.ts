@@ -6,33 +6,34 @@ import {
   PostMapping,
   URLEncodedFormParam,
   PathParam,
-  HeaderParam,
+  HeaderParam
 } from "../src";
 import {Mock, MockInstance, MockedObject} from "vitest";
 import {baseUrl, getFetchSpy, sutFactory} from "./helpers";
 
-describe('Mapping', () => {
+describe("Mapping", () => {
   let fetchSpy: MockInstance;
 
   beforeEach(() => {
     fetchSpy = getFetchSpy();
-  })
+  });
 
   describe("basic tests", () => {
     it("calls fetch for a basic get parses json response", async () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicGet();
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.has("content-type")).toBeFalsy();
     });
@@ -41,16 +42,21 @@ describe('Mapping', () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
-      const result = await sutFactory(MappingTest, {headers: new Headers({"content-type": "application/json; charset=utf-8"})}).basicGet();
+      const result = await sutFactory(MappingTest, {
+        headers: new Headers({
+          "content-type": "application/json; charset=utf-8"
+        })
+      }).basicGet();
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.has("content-type")).toBeFalsy();
     });
@@ -58,37 +64,51 @@ describe('Mapping', () => {
 
   describe("precedence", () => {
     it("method level headers take precedence over class level", async () => {
-      @Client({baseUrl: () => baseUrl, interceptors: [() => ({headers: {authorization: "class-auth"}})]})
+      @Client({
+        baseUrl: () => baseUrl,
+        interceptors: [() => ({headers: {authorization: "class-auth"}})]
+      })
       class MappingTest {
-        @GetMapping({value: "/test", interceptors: [() => ({headers: {authorization: "method-auth"}})]}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        @GetMapping({
+          value: "/test",
+          interceptors: [() => ({headers: {authorization: "method-auth"}})]
+        }) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicGet();
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("authorization")).toEqual("method-auth");
     });
 
     it("method level header param take precedence over class level", async () => {
-      @Client({baseUrl: () => baseUrl, interceptors: [() => ({headers: {authorization: "class-auth"}})]})
+      @Client({
+        baseUrl: () => baseUrl,
+        interceptors: [() => ({headers: {authorization: "class-auth"}})]
+      })
       class MappingTest {
-        @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(@HeaderParam("authorization") authorization: string): Promise<{ hello: "string" }> {
-        };
-      };
+        @GetMapping({value: "/test"})
+        basicGet(
+          @HeaderParam("authorization") authorization: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicGet("method-auth");
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("authorization")).toEqual("method-auth");
     });
@@ -98,17 +118,22 @@ describe('Mapping', () => {
     it("only one auth header is used", async () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
-        @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(@HeaderParam("authorization") authorization: string, @HeaderParam("authorization") authorization2: string): Promise<{ hello: "string" }> {
-        };
-      };
+        @GetMapping({value: "/test"})
+        basicGet(
+          @HeaderParam("authorization") authorization: string,
+          @HeaderParam("authorization") authorization2: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicGet("auth1", "auth2");
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("authorization")).toEqual("auth2");
     });
@@ -116,17 +141,25 @@ describe('Mapping', () => {
     it("only one content-type header is used", async () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
-        @PostMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicPost(@HeaderParam("content-type") contentType: string, @HeaderParam("content-type") contentType2: string): Promise<{ hello: "string" }> {
-        };
-      };
+        @PostMapping({value: "/test"})
+        basicPost(
+          @HeaderParam("content-type") contentType: string,
+          @HeaderParam("content-type") contentType2: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
 
-      const result = await sutFactory(MappingTest).basicPost("text/plain", "text/html");
+      const result = await sutFactory(MappingTest).basicPost(
+        "text/plain",
+        "text/html"
+      );
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "POST",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "POST",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("content-type")).toEqual("text/html");
     });
@@ -136,17 +169,22 @@ describe('Mapping', () => {
     it("multiple headers with the same name can be used", async () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
-        @PostMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicPost(@HeaderParam("x-test-id") id: string, @HeaderParam("x-test-id") id2: string): Promise<{ hello: "string" }> {
-        };
-      };
+        @PostMapping({value: "/test"})
+        basicPost(
+          @HeaderParam("x-test-id") id: string,
+          @HeaderParam("x-test-id") id2: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicPost("id1", "id2");
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "POST",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "POST",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("x-test-id")).toEqual("id1, id2");
     });
@@ -157,16 +195,17 @@ describe('Mapping', () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test", consumes: "application/json"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicGet();
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("accept")).toEqual("application/json");
     });
@@ -177,19 +216,20 @@ describe('Mapping', () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest, {
         text: () => Promise.resolve(JSON.stringify({hello: "world"})),
         headers: new Headers({"content-type": "not/application/json"})
       }).basicGet();
       expect(result).toEqual(JSON.stringify({hello: "world"}));
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
     });
   });
 
@@ -198,43 +238,46 @@ describe('Mapping', () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
-      await expect(() => sutFactory(MappingTest, {ok: false}).basicGet()).rejects.toThrow(expect.objectContaining({ok: false}));
+      await expect(() =>
+        sutFactory(MappingTest, {ok: false}).basicGet()
+      ).rejects.toThrow(expect.objectContaining({ok: false}));
     });
 
     it("throws when option is explicitly set", async () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test", throws: true}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
-      await expect(sutFactory(MappingTest, {ok: false}).basicGet()).rejects.toThrow(expect.objectContaining({ok: false}));
+      await expect(
+        sutFactory(MappingTest, {ok: false}).basicGet()
+      ).rejects.toThrow(expect.objectContaining({ok: false}));
     });
 
     it("doesn't throw when throws is false", async () => {
       @Client({baseUrl: () => baseUrl})
       class MappingTest {
         @GetMapping({value: "/test", throws: false}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       let response;
-      await expect((async () => {
-        response = await sutFactory(MappingTest, {ok: false}).basicGet();
-      })()).resolves.not.toThrow();
+      await expect(
+        (async () => {
+          response = await sutFactory(MappingTest, {ok: false}).basicGet();
+        })()
+      ).resolves.not.toThrow();
       expect(response).toEqual(expect.objectContaining({ok: false}));
     });
   });
 
   describe("cache", () => {
     let cache: MockedObject<Cache>;
-    let caches: MockedObject<CacheStorage>
+    let caches: MockedObject<CacheStorage>;
     let clone: Mock;
 
     beforeEach(() => {
@@ -253,43 +296,50 @@ describe('Mapping', () => {
       cache.put.mockReset();
       cache.match.mockReset();
       caches.open.mockReset();
-    })
+    });
 
     it("store an uncached response in the cache store", async () => {
       @Client({baseUrl: () => baseUrl, cache: "basicGetCache"})
       class MappingTest {
-        @GetMapping({value: "/test", consumes: "application/json", fromCache: true}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        @GetMapping({
+          value: "/test",
+          consumes: "application/json",
+          fromCache: true
+        }) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest, {
         url: "http://localhost:3000/test",
         clone
       }).basicGet();
       expect(result).toEqual({hello: "world"});
-      expect(fetchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        method: "GET",
-        url: "http://localhost:3000/test"
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("accept")).toEqual("application/json");
 
       expect(caches.open).toHaveBeenCalledWith("basicGetCache");
       expect(clone).toHaveBeenCalledOnce();
       expect(cache.match).toHaveBeenCalledOnce();
-      expect(cache.put).toHaveBeenCalledWith("http://localhost:3000/test", expect.objectContaining({
-        ok: true
-      }));
+      expect(cache.put).toHaveBeenCalledWith(
+        "http://localhost:3000/test",
+        expect.objectContaining({
+          ok: true
+        })
+      );
     });
 
     it("returns a cached response and does not update the store", async () => {
       @Client({baseUrl: () => baseUrl, cache: "basicGetCache"})
       class MappingTest {
         @GetMapping({value: "/test", fromCache: true}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       cache.match.mockResolvedValue({
         ok: true,
@@ -298,7 +348,7 @@ describe('Mapping', () => {
       } as Response);
       const result = await sutFactory(MappingTest).basicGet();
       expect(result).toEqual({hello: "world"});
-      
+
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(caches.open).toHaveBeenCalledWith("basicGetCache");
       expect(clone).not.toHaveBeenCalled();
@@ -309,14 +359,17 @@ describe('Mapping', () => {
     it("returns undefined when cacheMissBehavior is set to 'return'", async () => {
       @Client({baseUrl: () => baseUrl, cache: "basicGetCache"})
       class MappingTest {
-        @GetMapping({value: "/test", fromCache: true, cacheMissBehavior: "return"}) // @ts-expect-error function implementation done by @Mapping decorator
-        basicGet(): Promise<{ hello: "string" }> {
-        };
-      };
+        @GetMapping({
+          value: "/test",
+          fromCache: true,
+          cacheMissBehavior: "return"
+        }) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<{hello: "string"}> {}
+      }
 
       const result = await sutFactory(MappingTest).basicGet();
       expect(result).toBeUndefined();
-      
+
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(caches.open).toHaveBeenCalledWith("basicGetCache");
       expect(clone).not.toHaveBeenCalled();
@@ -330,11 +383,12 @@ describe('Mapping', () => {
       it("throws when no client options exist", async () => {
         class MappingTest {
           @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicGet(): Promise<{ hello: "string" }> {
-          };
+          basicGet(): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicGet()).rejects.toThrow("Client options not defined for MappingTest");
+        await expect(() => sutFactory(MappingTest).basicGet()).rejects.toThrow(
+          "Client options not defined for MappingTest"
+        );
       });
     });
 
@@ -342,12 +396,17 @@ describe('Mapping', () => {
       it("throws with multiple body params", async () => {
         @Client({baseUrl: () => baseUrl})
         class MappingTest {
-          @PostMapping({value: "/test/post"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicPost(@BodyParam content: object, @BodyParam content2: object): Promise<{ hello: "string" }> {
-          };
+          @PostMapping({value: "/test/post"})
+          basicPost(
+            @BodyParam content: object,
+            @BodyParam content2: object
+            // @ts-expect-error function implementation done by @Mapping decorator
+          ): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicPost({}, {})).rejects.toThrow("Only a single body param may be used.");
+        await expect(() =>
+          sutFactory(MappingTest).basicPost({}, {})
+        ).rejects.toThrow("Only a single body param may be used.");
       });
     });
 
@@ -355,34 +414,55 @@ describe('Mapping', () => {
       it("throws with BodyParam and FormParam", async () => {
         @Client({baseUrl: () => baseUrl})
         class MappingTest {
-          @PostMapping({value: "/test/post"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicPost(@BodyParam content: object, @FormParam("content2") content2: object): Promise<{ hello: "string" }> {
-          };
+          @PostMapping({value: "/test/post"})
+          basicPost(
+            @BodyParam content: object,
+            @FormParam("content2") content2: object
+            // @ts-expect-error function implementation done by @Mapping decorator
+          ): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicPost({}, {})).rejects.toThrow("Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination.");
+        await expect(() =>
+          sutFactory(MappingTest).basicPost({}, {})
+        ).rejects.toThrow(
+          "Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination."
+        );
       });
 
       it("throws with FormParam and URLEncodedFormParam", async () => {
         @Client({baseUrl: () => baseUrl})
         class MappingTest {
-          @PostMapping({value: "/test/post"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicPost(@FormParam("content") content: object, @URLEncodedFormParam("content2") content2: object): Promise<{ hello: "string" }> {
-          };
+          @PostMapping({value: "/test/post"})
+          basicPost(
+            @FormParam("content") content: object,
+            @URLEncodedFormParam("content2") content2: object
+            // @ts-expect-error function implementation done by @Mapping decorator
+          ): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicPost({}, {})).rejects.toThrow("Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination.");
+        await expect(() =>
+          sutFactory(MappingTest).basicPost({}, {})
+        ).rejects.toThrow(
+          "Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination."
+        );
       });
 
       it("throws with URLEncodedFormParam and BodyParam", async () => {
         @Client({baseUrl: () => baseUrl})
         class MappingTest {
-          @PostMapping({value: "/test/post"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicPost(@URLEncodedFormParam("content") content: object, @BodyParam content2: object): Promise<{ hello: "string" }> {
-          };
+          @PostMapping({value: "/test/post"})
+          basicPost(
+            @URLEncodedFormParam("content") content: object,
+            @BodyParam content2: object
+            // @ts-expect-error function implementation done by @Mapping decorator
+          ): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicPost({}, {})).rejects.toThrow("Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination.");
+        await expect(() =>
+          sutFactory(MappingTest).basicPost({}, {})
+        ).rejects.toThrow(
+          "Request may include either form parameters, URL-encoded parameters, or a body parameter—never a combination."
+        );
       });
     });
 
@@ -391,11 +471,12 @@ describe('Mapping', () => {
         @Client({baseUrl: () => baseUrl})
         class MappingTest {
           @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicGet(@PathParam("id") id: string): Promise<{ hello: "string" }> {
-          };
+          basicGet(@PathParam("id") id: string): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicGet("test")).rejects.toThrow("Path param 'id' not found in path spec");
+        await expect(() =>
+          sutFactory(MappingTest).basicGet("test")
+        ).rejects.toThrow("Path param 'id' not found in path spec");
       });
     });
 
@@ -404,12 +485,13 @@ describe('Mapping', () => {
         @Client({baseUrl: () => baseUrl})
         class MappingTest {
           @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
-          basicGet(extra: string): Promise<{ hello: "string" }> {
-          };
+          basicGet(extra: string): Promise<{hello: "string"}> {}
         }
 
-        await expect(() => sutFactory(MappingTest).basicGet("test")).rejects.toThrow("Unknown parameter at index 0");
+        await expect(() =>
+          sutFactory(MappingTest).basicGet("test")
+        ).rejects.toThrow("Unknown parameter at index 0");
       });
     });
   });
-})
+});

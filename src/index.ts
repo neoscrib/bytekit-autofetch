@@ -1,6 +1,12 @@
 import "reflect-metadata";
 import Client from "./Client";
-import Mapping, {GetMapping, PostMapping, PutMapping, PatchMapping, DeleteMapping} from "./Mapping";
+import Mapping, {
+  GetMapping,
+  PostMapping,
+  PutMapping,
+  PatchMapping,
+  DeleteMapping
+} from "./Mapping";
 import BodyParam from "./BodyParam";
 import HeaderParam from "./HeaderParam";
 import PathParam from "./PathParam";

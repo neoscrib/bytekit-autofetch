@@ -8,9 +8,16 @@ beforeEach(() => {
   fetchSpy = vi.spyOn(global, "fetch");
 });
 
-export const capCase = (value: string) => value.replaceAll(/^([A-Z])([A-Z]+)$/g, (...[, first, rest]) => `${first}${rest.toLowerCase()}`)
+export const capCase = (value: string) =>
+  value.replaceAll(
+    /^([A-Z])([A-Z]+)$/g,
+    (...[, first, rest]) => `${first}${rest.toLowerCase()}`
+  );
 
-export const sutFactory = <T>(constructor: Constructor<T>, responseOverrides?: Partial<Response>): T => {
+export const sutFactory = <T>(
+  constructor: Constructor<T>,
+  responseOverrides?: Partial<Response>
+): T => {
   fetchSpy.mockResolvedValue({
     ok: true,
     json: () => Promise.resolve({hello: "world"}),
