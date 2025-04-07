@@ -1,6 +1,6 @@
 {
   "name": "@bytekit/autofetch",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/neoscrib/bytekit-autofetch.git"
@@ -11,8 +11,7 @@
   "types": "./index.d.ts",
   "files": [
     "index.d.ts",
-    "dist",
-    "README.md"
+    "dist"
   ],
   "exports": {
     "import": "./dist/esm/index.js",
