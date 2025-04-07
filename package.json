@@ -1,6 +1,10 @@
 {
   "name": "@bytekit/autofetch",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:neoscrib/bytekit-autofetch.git"
+  },
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "type": "module",
