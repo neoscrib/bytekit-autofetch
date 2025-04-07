@@ -27,5 +27,8 @@ export default tseslint.config(
     rules: {
       "prettier/prettier": "error"
     }
+  },
+  {
+    ignores: ["dist/**/*"]
   }
 );
