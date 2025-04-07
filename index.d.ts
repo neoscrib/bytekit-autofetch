@@ -2,10 +2,16 @@ declare module "@bytekit/autofetch" {
   export import BodyParam = ByteKit.AutoFetch.BodyParam;
   export import Client = ByteKit.AutoFetch.Client;
   export import Mapping = ByteKit.AutoFetch.Mapping;
+  export import GetMapping = ByteKit.AutoFetch.GetMapping;
+  export import PostMapping = ByteKit.AutoFetch.PostMapping;
+  export import PutMapping = ByteKit.AutoFetch.PutMapping;
+  export import PatchMapping = ByteKit.AutoFetch.PatchMapping;
+  export import DeleteMapping = ByteKit.AutoFetch.DeleteMapping;
   export import HeaderParam = ByteKit.AutoFetch.HeaderParam;
   export import PathParam = ByteKit.AutoFetch.PathParam;
   export import FormParam = ByteKit.AutoFetch.FormParam;
   export import QueryParam = ByteKit.AutoFetch.QueryParam;
+  export import URLEncodedFormParam = ByteKit.AutoFetch.URLEncodedFormParam;
   export import Init = ByteKit.AutoFetch.Init;
   export import HttpMethod = ByteKit.AutoFetch.HttpMethod;
 }
