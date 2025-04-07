@@ -107,25 +107,27 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
 
       await executeAfter(thisArg, after, resp, id, clientOptions);
 
-      const contentType = resp.headers.get("content-type");
-      const isJson =
-        contentType === "application/json" ||
-        contentType?.startsWith("application/json;");
-
       if (resp.ok || resp.redirected) {
+        const contentType = resp.headers.get("content-type");
+        const isJson =
+          contentType === "application/json" ||
+          contentType?.startsWith("application/json;");
+
         if (!fromCache && cacheStore) {
           await cacheStore.put(resp.url, resp.clone());
         }
 
-        return response
-          ? resp
-          : blob
-            ? resp.blob()
-            : stream
-              ? resp.body
-              : isJson
-                ? resp.json()
-                : resp.text();
+        if (response) {
+          return resp;
+        } else if (blob) {
+          return resp.blob();
+        } else if (stream) {
+          return resp.body;
+        } else if (isJson) {
+          return resp.json();
+        } else {
+          return resp.text();
+        }
       } else if (throws) {
         throw resp;
       } else {

@@ -10,6 +10,7 @@ import {
 } from "../src";
 import {Mock, MockInstance, MockedObject} from "vitest";
 import {baseUrl, getFetchSpy, sutFactory} from "./helpers";
+import {text} from "stream/consumers";
 
 describe("Mapping", () => {
   let fetchSpy: MockInstance;
@@ -59,6 +60,76 @@ describe("Mapping", () => {
       );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.has("content-type")).toBeFalsy();
+    });
+
+    it("returns response object when response option is set", async () => {
+      @Client({baseUrl: () => baseUrl})
+      class MappingTest {
+        @GetMapping({value: "/test", response: true}) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<Response> {}
+      }
+
+      const result = await sutFactory(MappingTest, {
+        headers: new Headers({
+          "content-type": "application/json; charset=utf-8"
+        })
+      }).basicGet();
+      expect(result).toEqual(expect.objectContaining({ok: true}));
+      expect(await result.json()).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+    });
+
+    it("returns blob object when blob option is set", async () => {
+      @Client({baseUrl: () => baseUrl})
+      class MappingTest {
+        @GetMapping({value: "/test", blob: true}) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<Blob> {}
+      }
+
+      const result = await sutFactory(MappingTest, {
+        headers: new Headers({
+          "content-type": "application/json; charset=utf-8"
+        })
+      }).basicGet();
+      expect(result).toBeInstanceOf(Blob);
+      const content = JSON.parse(
+        new TextDecoder().decode(new Uint8Array(await result.arrayBuffer()))
+      );
+      expect(content).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+    });
+
+    it("returns stream object when stream option is set", async () => {
+      @Client({baseUrl: () => baseUrl})
+      class MappingTest {
+        @GetMapping({value: "/test", stream: true}) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<Readable> {}
+      }
+
+      const result = await sutFactory(MappingTest, {
+        headers: new Headers({
+          "content-type": "application/json; charset=utf-8"
+        })
+      }).basicGet();
+      expect(result).toBeInstanceOf(ReadableStream);
+      const content = JSON.parse(await text(result));
+      expect(content).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
     });
   });
 
@@ -222,6 +293,26 @@ describe("Mapping", () => {
       const result = await sutFactory(MappingTest, {
         text: () => Promise.resolve(JSON.stringify({hello: "world"})),
         headers: new Headers({"content-type": "not/application/json"})
+      }).basicGet();
+      expect(result).toEqual(JSON.stringify({hello: "world"}));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+    });
+
+    it("return text when response content-type is not set", async () => {
+      @Client({baseUrl: () => baseUrl})
+      class MappingTest {
+        @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
+        basicGet(): Promise<{hello: "string"}> {}
+      }
+
+      const result = await sutFactory(MappingTest, {
+        text: () => Promise.resolve(JSON.stringify({hello: "world"})),
+        headers: new Headers()
       }).basicGet();
       expect(result).toEqual(JSON.stringify({hello: "world"}));
       expect(fetchSpy).toHaveBeenCalledWith(

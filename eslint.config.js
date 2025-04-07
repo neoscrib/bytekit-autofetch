@@ -5,7 +5,7 @@ import prettier from "eslint-plugin-prettier";
 export default tseslint.config(
   js.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -22,7 +22,7 @@ export default tseslint.config(
     }
   },
   {
-    files: ["**/*.{ts,tsx,js,jsx}"],
+    files: ["**/*.{ts,js}"],
     plugins: {prettier},
     rules: {
       "prettier/prettier": "error"

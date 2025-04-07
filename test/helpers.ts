@@ -18,12 +18,20 @@ export const sutFactory = <T>(
   constructor: Constructor<T>,
   responseOverrides?: Partial<Response>
 ): T => {
-  fetchSpy.mockResolvedValue({
+  const response = {
     ok: true,
     json: () => Promise.resolve({hello: "world"}),
+    blob: () =>
+      Promise.resolve(
+        new Blob([JSON.stringify({hello: "world"})], {type: "application/json"})
+      ),
+    body: new Blob([JSON.stringify({hello: "world"})], {
+      type: "application/json"
+    }).stream(),
     headers: new Headers({"content-type": "application/json"}),
     ...responseOverrides
-  } as Response);
+  } as Response;
+  fetchSpy.mockResolvedValue(response);
   return new constructor();
 };
 
