@@ -1,4 +1,4 @@
-import {ClientConstants} from "./constants";
+import {ClientConstants} from "./constants.ts";
 
 const PathParam: typeof ByteKit.AutoFetch.PathParam =
   (name) => (target, propertyKey, parameterIndex) => {

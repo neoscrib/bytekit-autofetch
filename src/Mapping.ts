@@ -1,5 +1,5 @@
-import {ClientConstants} from "./constants";
-import {HttpMethod} from "./HttpMethod";
+import {ClientConstants} from "./constants.ts";
+import {HttpMethod} from "./HttpMethod.ts";
 
 import IClientOptions = ByteKit.AutoFetch.IClientOptions;
 import IQueryParamOptions = ByteKit.AutoFetch.IQueryParamOptions;
@@ -70,13 +70,13 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         headers,
         body
       );
-      const id = await executeBefore(thisArg, before, init, clientOptions);
+      const id = await executeBefore(thisArg, before, url, init, clientOptions);
 
       const cacheName = cache ?? clientOptions.cache;
       const cacheStore = cacheName
         ? await globalThis.caches.open(cacheName)
         : undefined;
-      const request = new Request(url.toString(), init);
+      const request = new Request(url, init);
       let resp: Response;
 
       try {
@@ -324,12 +324,13 @@ function processArgs(
 async function executeBefore<T>(
   thisArg: T,
   before: IClientOptions<T>["before"] | undefined,
+  url: URL,
   init: RequestInit,
   clientOptions: IClientOptions<T>
 ) {
   const id = crypto.randomUUID();
-  await before?.(thisArg, init, id);
-  await clientOptions.before?.(thisArg, init, id);
+  await before?.(thisArg, url, init, id);
+  await clientOptions.before?.(thisArg, url, init, id);
   return id;
 }
 

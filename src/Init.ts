@@ -1,4 +1,4 @@
-import {ClientConstants} from "./constants";
+import {ClientConstants} from "./constants.ts";
 
 const Init: ParameterDecorator = (target, propertyKey, parameterIndex) => {
   const initOptions: Set<number> =

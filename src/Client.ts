@@ -1,4 +1,4 @@
-import {ClientConstants} from "./constants";
+import {ClientConstants} from "./constants.ts";
 
 const Client: typeof ByteKit.AutoFetch.Client =
   (options) =>

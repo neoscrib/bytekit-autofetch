@@ -33,7 +33,7 @@ describe("header param tests", () => {
     class MappingTest {
       @GetMapping({
         value: "/test",
-        before: (thisArg, init) =>
+        before: (thisArg, url, init) =>
           (init.headers as Headers).delete("content-type")
       })
       basicGet(
@@ -44,7 +44,7 @@ describe("header param tests", () => {
 
       @GetMapping({
         value: "/test2",
-        before: (thisArg, init) =>
+        before: (thisArg, url, init) =>
           (init.headers as Headers).delete("content-type")
       })
       basicGetOverrideAuth(

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "module": "CommonJS",
     "outDir": "./dist/cjs",
-    "noEmit": false
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["./index.d.ts", "./src"]
 }

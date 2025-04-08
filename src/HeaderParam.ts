@@ -1,4 +1,4 @@
-import {ClientConstants} from "./constants";
+import {ClientConstants} from "./constants.ts";
 
 const HeaderParam: typeof ByteKit.AutoFetch.HeaderParam =
   (name) => (target, propertyKey, parameterIndex) => {

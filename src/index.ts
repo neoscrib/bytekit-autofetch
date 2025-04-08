@@ -1,20 +1,20 @@
 import "reflect-metadata";
-import Client from "./Client";
+import Client from "./Client.ts";
 import Mapping, {
   GetMapping,
   PostMapping,
   PutMapping,
   PatchMapping,
   DeleteMapping
-} from "./Mapping";
-import BodyParam from "./BodyParam";
-import HeaderParam from "./HeaderParam";
-import PathParam from "./PathParam";
-import FormParam from "./FormParam";
-import URLEncodedFormParam from "./URLEncodedFormParam";
-import QueryParam from "./QueryParam";
-import Init from "./Init";
-import {HttpMethod} from "./HttpMethod";
+} from "./Mapping.ts";
+import BodyParam from "./BodyParam.ts";
+import HeaderParam from "./HeaderParam.ts";
+import PathParam from "./PathParam.ts";
+import FormParam from "./FormParam.ts";
+import URLEncodedFormParam from "./URLEncodedFormParam.ts";
+import QueryParam from "./QueryParam.ts";
+import Init from "./Init.ts";
+import {HttpMethod} from "./HttpMethod.ts";
 
 export {
   Client,

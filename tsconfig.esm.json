@@ -4,7 +4,9 @@
     "module": "ESNext",
     "outDir": "./dist/esm",
     "esModuleInterop": true,
-    "noEmit": false
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["./index.d.ts", "./src"]
 }

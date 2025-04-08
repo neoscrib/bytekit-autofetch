@@ -41,8 +41,8 @@ interface User {
 
 @Client({
   baseUrl: () => "https://api.example.com",
-  before: (self, init, id) => {
-    console.log(`[${id}] Requesting ${init.method} ${init.body}`);
+  before: (self, url, init, id) => {
+    console.log(`[${id}] Requesting ${init.method} ${url} ${init.body}`);
   },
   after: (self, response, id) => {
     console.log(`[${id}] Got response`, response);

@@ -24,7 +24,12 @@ declare namespace ByteKit {
     export interface IClientOptions<T = Function> {
       baseUrl(thisArg: T): MaybePromise<string>;
       interceptors?: ((thisArg: T) => MaybePromise<RequestInit>)[];
-      before?(thisArg: T, init: RequestInit, id: string): MaybePromise<void>;
+      before?(
+        thisArg: T,
+        url: URL,
+        init: RequestInit,
+        id: string
+      ): MaybePromise<void>;
       after?(
         thisArg: T,
         response: Response | Error,
@@ -48,7 +53,12 @@ declare namespace ByteKit {
       cacheQueryOptions?: CacheQueryOptions;
       cacheMissBehavior?: "fetch" | "return";
       interceptors?: ((thisArg: T) => MaybePromise<RequestInit>)[];
-      before?(thisArg: T, init: RequestInit, id: string): MaybePromise<void>;
+      before?(
+        thisArg: T,
+        url: URL,
+        init: RequestInit,
+        id: string
+      ): MaybePromise<void>;
       after?(
         thisArg: T,
         response: Response | Error,

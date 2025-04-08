@@ -1,4 +1,4 @@
-import {ClientConstants} from "./constants";
+import {ClientConstants} from "./constants.ts";
 
 const QueryParam: typeof ByteKit.AutoFetch.QueryParam =
   (options) => (target, propertyKey, parameterIndex) => {
