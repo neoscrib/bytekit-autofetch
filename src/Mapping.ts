@@ -24,7 +24,8 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
     interceptors,
     before,
     after,
-    adaptor = (input) => globalThis.fetch(input)
+    adaptor: adaptorArg,
+    adaptorFactory
   }) =>
   (t, propertyKey, descriptor) => {
     (descriptor.value as any) = async function <T>(
@@ -50,6 +51,22 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         throw new Error(
           `Client options not defined for ${target.constructor.name}`
         );
+      }
+
+      let adaptor =
+        typeof adaptorFactory === "function"
+          ? await adaptorFactory(thisArg)
+          : adaptorArg;
+
+      if (!adaptor) {
+        adaptor =
+          typeof clientOptions.adaptorFactory === "function"
+            ? await clientOptions.adaptorFactory(thisArg)
+            : clientOptions.adaptor;
+      }
+
+      if (!adaptor) {
+        adaptor = globalThis.fetch;
       }
 
       const {body, headers, inits, url} = processArgs(

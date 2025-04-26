@@ -36,6 +36,7 @@ declare namespace ByteKit {
         id: string
       ): MaybePromise<void>;
       adaptor?: typeof globalThis.fetch;
+      adaptorFactory?: (thisArg: T) => MaybePromise<typeof globalThis.fetch>;
       cache?: string;
     }
 
@@ -65,6 +66,7 @@ declare namespace ByteKit {
         id: string
       ): MaybePromise<void>;
       adaptor?: typeof globalThis.fetch;
+      adaptorFactory?: (thisArg: T) => MaybePromise<typeof globalThis.fetch>;
     }
 
     export interface IQueryParamOptions {
