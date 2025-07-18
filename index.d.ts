@@ -40,7 +40,8 @@ declare namespace ByteKit {
       cache?: string;
     }
 
-    export interface IMappingOptions<T = Function> {
+    export interface IMappingOptions<T = Function> extends Omit<IClientOptions<T>, "baseUrl"> {
+      baseUrl?(thisArg: T): MaybePromise<string>;
       method?: HttpMethod;
       value: string;
       blob?: boolean;
@@ -49,24 +50,9 @@ declare namespace ByteKit {
       produces?: string;
       consumes?: string;
       throws?: boolean;
-      cache?: string;
       fromCache?: boolean;
       cacheQueryOptions?: CacheQueryOptions;
       cacheMissBehavior?: "fetch" | "return";
-      interceptors?: ((thisArg: T) => MaybePromise<RequestInit>)[];
-      before?(
-        thisArg: T,
-        url: URL,
-        init: RequestInit,
-        id: string
-      ): MaybePromise<void>;
-      after?(
-        thisArg: T,
-        response: Response | Error,
-        id: string
-      ): MaybePromise<void>;
-      adaptor?: typeof globalThis.fetch;
-      adaptorFactory?: (thisArg: T) => MaybePromise<typeof globalThis.fetch>;
     }
 
     export interface IQueryParamOptions {

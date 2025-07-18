@@ -184,7 +184,6 @@ describe("Mapping", () => {
       expect(headers.get("authorization")).toEqual("method-auth");
     });
 
-
     it("method level before handler takes precendence over class", async () => {
       const beforeClass = vi.fn();
       const beforeMethod = vi.fn();
@@ -196,12 +195,11 @@ describe("Mapping", () => {
       class MappingTest {
         @GetMapping({value: "/test", before: beforeMethod})
         basicGet(
-          @HeaderParam("authorization") authorization: string
           // @ts-expect-error function implementation done by @Mapping decorator
         ): Promise<{hello: "string"}> {}
       }
 
-      const result = await sutFactory(MappingTest).basicGet("method-auth");
+      await sutFactory(MappingTest).basicGet();
       expect(beforeMethod).toHaveBeenCalled();
       expect(beforeClass).toHaveBeenCalled();
       expect(beforeClass.mock.invocationCallOrder[0]).toBeGreaterThan(beforeMethod.mock.invocationCallOrder[0]);
@@ -218,15 +216,36 @@ describe("Mapping", () => {
       class MappingTest {
         @GetMapping({value: "/test", after: afterMethod})
         basicGet(
-          @HeaderParam("authorization") authorization: string
           // @ts-expect-error function implementation done by @Mapping decorator
         ): Promise<{hello: "string"}> {}
       }
 
-      const result = await sutFactory(MappingTest).basicGet("method-auth");
+      await sutFactory(MappingTest).basicGet();
       expect(afterMethod).toHaveBeenCalled();
       expect(afterClass).toHaveBeenCalled();
       expect(afterClass.mock.invocationCallOrder[0]).toBeGreaterThan(afterMethod.mock.invocationCallOrder[0]);
+    });
+
+    it("method level baseUrl takes precedence over class", async () => {
+      const baseUrlClass = vi.fn().mockResolvedValue("http://localhost:3333/");
+      @Client({
+        baseUrl: baseUrlClass,
+        interceptors: [() => ({headers: {authorization: "class-auth"}})]
+      })
+      class MappingTest {
+        @GetMapping({baseUrl: () => "http://localhost:8080/", value: "/test"})
+        basicGet(
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
+
+      await sutFactory(MappingTest).basicGet();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: "http://localhost:8080/test"
+        })
+      );
+      expect(baseUrlClass).not.toHaveBeenCalled();
     });
   });
 

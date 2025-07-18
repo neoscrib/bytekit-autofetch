@@ -5,10 +5,9 @@ import IClientOptions = ByteKit.AutoFetch.IClientOptions;
 import IQueryParamOptions = ByteKit.AutoFetch.IQueryParamOptions;
 import IMappingOptions = ByteKit.AutoFetch.IMappingOptions;
 
-const caches = globalThis.caches;
-
 const Mapping: typeof ByteKit.AutoFetch.Mapping =
   ({
+    baseUrl,
     method,
     value,
     blob,
@@ -69,11 +68,12 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         adaptor = globalThis.fetch;
       }
 
+      const base = await (baseUrl ?? clientOptions.baseUrl)(thisArg);
       const {body, headers, inits, url} = processArgs(
         target,
         propertyKey,
         args,
-        await clientOptions.baseUrl(thisArg),
+        base,
         value,
         produces,
         consumes
