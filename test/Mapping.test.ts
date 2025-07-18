@@ -183,6 +183,51 @@ describe("Mapping", () => {
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;
       expect(headers.get("authorization")).toEqual("method-auth");
     });
+
+
+    it("method level before handler takes precendence over class", async () => {
+      const beforeClass = vi.fn();
+      const beforeMethod = vi.fn();
+      @Client({
+        baseUrl: () => baseUrl,
+        interceptors: [() => ({headers: {authorization: "class-auth"}})],
+        before: beforeClass
+      })
+      class MappingTest {
+        @GetMapping({value: "/test", before: beforeMethod})
+        basicGet(
+          @HeaderParam("authorization") authorization: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
+
+      const result = await sutFactory(MappingTest).basicGet("method-auth");
+      expect(beforeMethod).toHaveBeenCalled();
+      expect(beforeClass).toHaveBeenCalled();
+      expect(beforeClass.mock.invocationCallOrder[0]).toBeGreaterThan(beforeMethod.mock.invocationCallOrder[0]);
+    });
+
+    it("method level after handler takes precendence over class", async () => {
+      const afterClass = vi.fn();
+      const afterMethod = vi.fn();
+      @Client({
+        baseUrl: () => baseUrl,
+        interceptors: [() => ({headers: {authorization: "class-auth"}})],
+        after: afterClass
+      })
+      class MappingTest {
+        @GetMapping({value: "/test", after: afterMethod})
+        basicGet(
+          @HeaderParam("authorization") authorization: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
+
+      const result = await sutFactory(MappingTest).basicGet("method-auth");
+      expect(afterMethod).toHaveBeenCalled();
+      expect(afterClass).toHaveBeenCalled();
+      expect(afterClass.mock.invocationCallOrder[0]).toBeGreaterThan(afterMethod.mock.invocationCallOrder[0]);
+    });
   });
 
   describe("exclusive headers", () => {

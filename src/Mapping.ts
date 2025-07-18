@@ -358,8 +358,8 @@ async function executeAfter<T>(
   id: string,
   clientOptions: IClientOptions<T>
 ) {
-  await clientOptions.after?.(thisArg, resp, id);
   await after?.(thisArg, resp, id);
+  await clientOptions.after?.(thisArg, resp, id);
 }
 
 function mergeHeaders(a?: HeadersInit, b?: HeadersInit): Headers {
