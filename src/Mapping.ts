@@ -189,6 +189,11 @@ function processArgs(
     target,
     propertyKey
   );
+  const ignoreParams: Set<number> = Reflect.getMetadata(
+    ClientConstants.IgnoreParams,
+    target,
+    propertyKey
+  );
   const initOptions: Set<number> = Reflect.getMetadata(
     ClientConstants.InitOptions,
     target,
@@ -316,6 +321,10 @@ function processArgs(
 
     if (initOptions?.has(i) && current) {
       inits.push(current);
+      processed = true;
+    }
+
+    if (ignoreParams?.has(i)) {
       processed = true;
     }
 

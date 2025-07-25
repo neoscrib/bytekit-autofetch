@@ -7,4 +7,5 @@ export enum ClientConstants {
   ClientOptions = "bytekit:autofetch:decorators:client-options",
   InitOptions = "bytekit:autofetch:decorators:init-options",
   URLEncodedFormParams = "bytekit:autofetch:decorators:url-encoded-form-params",
+  IgnoreParams = "bytekit:autofetch:decorators:ignore-params",
 }

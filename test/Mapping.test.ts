@@ -6,7 +6,8 @@ import {
   PostMapping,
   URLEncodedFormParam,
   PathParam,
-  HeaderParam
+  HeaderParam,
+  IgnoreParam
 } from "../src";
 import {Mock, MockInstance, MockedObject} from "vitest";
 import {baseUrl, getFetchSpy, sutFactory} from "./helpers";
@@ -140,16 +141,17 @@ describe("Mapping", () => {
       class MappingTest {
         @GetMapping({value: "/test/{id}", before: beforeMethod})
         basicGet(
-          @PathParam("id") id: string
+          @PathParam("id") id: string,
+          @IgnoreParam ignored: string,
           // @ts-expect-error function implementation done by @Mapping decorator
         ): Promise<{hello: "string"}> {}
       }
 
       const id = crypto.randomUUID();
       const instance = sutFactory(MappingTest);
-      await instance.basicGet(id);
+      await instance.basicGet(id, "hello");
       expect(beforeMethod).toHaveBeenCalled();
-      expect(beforeMethod).toHaveBeenCalledWith(instance, new URL(`/test/${id}`, baseUrl), expect.any(Object), expect.any(String), "basicGet", [id]);
+      expect(beforeMethod).toHaveBeenCalledWith(instance, new URL(`/test/${id}`, baseUrl), expect.any(Object), expect.any(String), "basicGet", [id, "hello"]);
     });
   });
 
@@ -160,16 +162,17 @@ describe("Mapping", () => {
       class MappingTest {
         @GetMapping({value: "/test/{id}", after: afterMethod})
         basicGet(
-          @PathParam("id") id: string
+          @PathParam("id") id: string,
+          @IgnoreParam ignored: string
           // @ts-expect-error function implementation done by @Mapping decorator
         ): Promise<{hello: "string"}> {}
       }
 
       const id = crypto.randomUUID();
       const instance = sutFactory(MappingTest);
-      await instance.basicGet(id);
+      await instance.basicGet(id, "hello");
       expect(afterMethod).toHaveBeenCalled();
-      expect(afterMethod).toHaveBeenCalledWith(instance, expect.any(Object), expect.any(String), "basicGet", [id]);
+      expect(afterMethod).toHaveBeenCalledWith(instance, expect.any(Object), expect.any(String), "basicGet", [id, "hello"]);
     });
   });
 

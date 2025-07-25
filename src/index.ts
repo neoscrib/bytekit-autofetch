@@ -15,6 +15,7 @@ import URLEncodedFormParam from "./URLEncodedFormParam.ts";
 import QueryParam from "./QueryParam.ts";
 import Init from "./Init.ts";
 import {HttpMethod} from "./HttpMethod.ts";
+import IgnoreParam from "./IgnoreParam.ts";
 
 export {
   Client,
@@ -29,6 +30,7 @@ export {
   PathParam,
   FormParam,
   URLEncodedFormParam,
+  IgnoreParam,
   QueryParam,
   Init,
   HttpMethod

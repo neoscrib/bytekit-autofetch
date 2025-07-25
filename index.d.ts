@@ -1,5 +1,6 @@
 declare module "@bytekit/autofetch" {
   export import BodyParam = ByteKit.AutoFetch.BodyParam;
+  export import IgnoreParam = ByteKit.AutoFetch.IgnoreParam;
   export import Client = ByteKit.AutoFetch.Client;
   export import Mapping = ByteKit.AutoFetch.Mapping;
   export import GetMapping = ByteKit.AutoFetch.GetMapping;
@@ -65,6 +66,8 @@ declare namespace ByteKit {
     }
 
     export const BodyParam: ParameterDecorator;
+
+    export const IgnoreParam: ParameterDecorator;
 
     export const Init: ParameterDecorator;
 
