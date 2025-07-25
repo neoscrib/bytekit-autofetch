@@ -87,7 +87,7 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         headers,
         body
       );
-      const id = await executeBefore(thisArg, before, url, init, clientOptions);
+      const id = await executeBefore(thisArg, before, url, init, clientOptions, propertyKey as string, args);
 
       const cacheName = cache ?? clientOptions.cache;
       const cacheStore = cacheName
@@ -118,11 +118,11 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
           resp = await adaptor(request);
         }
       } catch (error) {
-        await executeAfter(thisArg, after, error as Error, id, clientOptions);
+        await executeAfter(thisArg, after, error as Error, id, clientOptions, propertyKey as string, args);
         throw error;
       }
 
-      await executeAfter(thisArg, after, resp, id, clientOptions);
+      await executeAfter(thisArg, after, resp, id, clientOptions, propertyKey as string, args);
 
       if (resp.ok || resp.redirected) {
         const contentType = resp.headers.get("content-type");
@@ -349,11 +349,13 @@ async function executeBefore<T>(
   before: IClientOptions<T>["before"] | undefined,
   url: URL,
   init: RequestInit,
-  clientOptions: IClientOptions<T>
+  clientOptions: IClientOptions<T>,
+  methodName: string,
+  args: any[]
 ) {
   const id = crypto.randomUUID();
-  await before?.(thisArg, url, init, id);
-  await clientOptions.before?.(thisArg, url, init, id);
+  await before?.(thisArg, url, init, id, methodName, args);
+  await clientOptions.before?.(thisArg, url, init, id, methodName, args);
   return id;
 }
 
@@ -362,10 +364,12 @@ async function executeAfter<T>(
   after: IClientOptions<T>["after"] | undefined,
   resp: Error | Response,
   id: string,
-  clientOptions: IClientOptions<T>
+  clientOptions: IClientOptions<T>,
+  methodName: string,
+  args: any[]
 ) {
-  await after?.(thisArg, resp, id);
-  await clientOptions.after?.(thisArg, resp, id);
+  await after?.(thisArg, resp, id, methodName, args);
+  await clientOptions.after?.(thisArg, resp, id, methodName, args);
 }
 
 function mergeHeaders(a?: HeadersInit, b?: HeadersInit): Headers {

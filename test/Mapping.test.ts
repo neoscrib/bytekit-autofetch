@@ -133,6 +133,46 @@ describe("Mapping", () => {
     });
   });
 
+  describe("before", () => {
+    it("is called with correct params", async () => {
+      const beforeMethod = vi.fn();
+      @Client({baseUrl: () => baseUrl})
+      class MappingTest {
+        @GetMapping({value: "/test/{id}", before: beforeMethod})
+        basicGet(
+          @PathParam("id") id: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
+
+      const id = crypto.randomUUID();
+      const instance = sutFactory(MappingTest);
+      await instance.basicGet(id);
+      expect(beforeMethod).toHaveBeenCalled();
+      expect(beforeMethod).toHaveBeenCalledWith(instance, new URL(`/test/${id}`, baseUrl), expect.any(Object), expect.any(String), "basicGet", [id]);
+    });
+  });
+
+  describe("after", () => {
+    it("is called with correct params", async () => {
+      const afterMethod = vi.fn();
+      @Client({baseUrl: () => baseUrl})
+      class MappingTest {
+        @GetMapping({value: "/test/{id}", after: afterMethod})
+        basicGet(
+          @PathParam("id") id: string
+          // @ts-expect-error function implementation done by @Mapping decorator
+        ): Promise<{hello: "string"}> {}
+      }
+
+      const id = crypto.randomUUID();
+      const instance = sutFactory(MappingTest);
+      await instance.basicGet(id);
+      expect(afterMethod).toHaveBeenCalled();
+      expect(afterMethod).toHaveBeenCalledWith(instance, expect.any(Object), expect.any(String), "basicGet", [id]);
+    });
+  });
+
   describe("precedence", () => {
     it("method level headers take precedence over class level", async () => {
       @Client({

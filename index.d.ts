@@ -28,12 +28,16 @@ declare namespace ByteKit {
         thisArg: T,
         url: URL,
         init: RequestInit,
-        id: string
+        id: string,
+        methodName: string,
+        args: any[]
       ): MaybePromise<void>;
       after?(
         thisArg: T,
         response: Response | Error,
-        id: string
+        id: string,
+        methodName: string,
+        args: any[]
       ): MaybePromise<void>;
       adaptor?: typeof globalThis.fetch;
       adaptorFactory?: (thisArg: T) => MaybePromise<typeof globalThis.fetch>;
