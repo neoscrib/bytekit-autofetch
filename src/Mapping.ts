@@ -2,7 +2,7 @@ import {ClientConstants} from "./constants.ts";
 import {HttpMethod} from "./HttpMethod.ts";
 
 import IClientOptions = ByteKit.AutoFetch.IClientOptions;
-import IQueryParamOptions = ByteKit.AutoFetch.IQueryParamOptions;
+import IExtendedOptions = ByteKit.AutoFetch.IExtendedOptions;
 import IMappingOptions = ByteKit.AutoFetch.IMappingOptions;
 
 const Mapping: typeof ByteKit.AutoFetch.Mapping =
@@ -167,9 +167,9 @@ function processArgs(
     target,
     propertyKey
   );
-  const queryParams: Map<number, string | IQueryParamOptions> =
+  const queryParams: Map<number, string | IExtendedOptions> =
     Reflect.getMetadata(ClientConstants.QueryParams, target, propertyKey);
-  const headerParams: Map<number, string> = Reflect.getMetadata(
+  const headerParams: Map<number, string | IExtendedOptions> = Reflect.getMetadata(
     ClientConstants.HeaderParams,
     target,
     propertyKey
@@ -242,15 +242,21 @@ function processArgs(
     }
 
     if (headerParams?.has(i)) {
-      const name = headerParams.get(i)!;
-      if (
-        name.toLowerCase() === "content-type" ||
-        name.toLowerCase() === "authorization"
-      ) {
-        headers.set(name, current);
-      } else {
-        headers.append(name, current);
+      const options = headerParams.get(i)!;
+      const name = typeof options === "string" ? options : options.name;
+      const required = (typeof options === "string" || options.required) ?? true;
+
+      if (required || (current !== null && current !== undefined)) {
+        if (
+          name.toLowerCase() === "content-type" ||
+          name.toLowerCase() === "authorization"
+        ) {
+          headers.set(name, current);
+        } else {
+          headers.append(name, current);
+        }
       }
+
       processed = true;
     }
 

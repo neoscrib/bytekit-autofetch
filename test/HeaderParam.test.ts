@@ -52,6 +52,12 @@ describe("header param tests", () => {
         // @ts-expect-error function implementation done by @Mapping decorator
       ): Promise<{hello: "string"}> {}
 
+      @GetMapping({value: "/test"})
+      basicGetOptionalParam(
+        @HeaderParam({name: "x-id", required: false}) id?: string
+        // @ts-expect-error function implementation done by @Mapping decorator
+      ): Promise<{hello: "string"}> {}
+
       @GetMapping({value: "/test2"})
       basicGet3(
         @HeaderParam("content-type") id: string,
@@ -171,4 +177,59 @@ describe("header param tests", () => {
       expect(body).toEqual({testing: 123});
     });
   }
+
+  describe("optional params", () => {
+    it("includes optional param when supplied and not required", async () => {
+      const id = crypto.randomUUID();
+      const result = await sutFactory(createClass()).basicGetOptionalParam(id);
+      expect(result).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+    const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+    expect(headers.get("x-id")).toEqual(id);
+    });
+
+    it("doesn't include optional param when omitted and not required", async () => {
+      const result = await sutFactory(createClass()).basicGetOptionalParam();
+      expect(result).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+    const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+    expect(headers.has("x-id")).toBeFalsy()
+    });
+
+    it("doesn't include optional param when null and not required", async () => {
+      const result = await sutFactory(createClass()).basicGetOptionalParam(null as unknown as string);
+      expect(result).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+      const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+      expect(headers.has("x-id")).toBeFalsy()
+    });
+
+    it("doesn't include optional param when undefined and not required", async () => {
+      const result = await sutFactory(createClass()).basicGetOptionalParam(undefined);
+      expect(result).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: "http://localhost:3000/test"
+        })
+      );
+      const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+      expect(headers.has("x-id")).toBeFalsy()
+    });
+  })
 });

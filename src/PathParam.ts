@@ -2,7 +2,7 @@ import {ClientConstants} from "./constants.ts";
 
 const PathParam: typeof ByteKit.AutoFetch.PathParam =
   (name) => (target, propertyKey, parameterIndex) => {
-    const pathParams: Map<number, string | symbol> =
+    const pathParams: Map<number, Parameters<typeof ByteKit.AutoFetch.PathParam>[0]> =
       Reflect.getMetadata(ClientConstants.PathParams, target, propertyKey!) ??
       new Map();
     pathParams.set(parameterIndex, name);

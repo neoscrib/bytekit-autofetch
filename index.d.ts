@@ -55,7 +55,7 @@ declare namespace ByteKit {
       cacheMissBehavior?: "fetch" | "return";
     }
 
-    export interface IQueryParamOptions {
+    export interface IExtendedOptions {
       name: string;
       required?: boolean;
     }
@@ -83,7 +83,7 @@ declare namespace ByteKit {
       options: Omit<IMappingOptions, "method">
     ): MethodDecorator;
 
-    export function HeaderParam(name: string): ParameterDecorator;
+    export function HeaderParam(name: string | IExtendedOptions): ParameterDecorator;
 
     export function PathParam(name: string): ParameterDecorator;
 
@@ -92,7 +92,7 @@ declare namespace ByteKit {
     export function URLEncodedFormParam(name: string): ParameterDecorator;
 
     export function QueryParam(
-      options: string | IQueryParamOptions
+      options: string | IExtendedOptions
     ): ParameterDecorator;
 
     export enum HttpMethod {

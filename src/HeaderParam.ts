@@ -1,11 +1,11 @@
 import {ClientConstants} from "./constants.ts";
 
 const HeaderParam: typeof ByteKit.AutoFetch.HeaderParam =
-  (name) => (target, propertyKey, parameterIndex) => {
-    const queryParams: Map<number, string | symbol> =
+  (options) => (target, propertyKey, parameterIndex) => {
+    const queryParams: Map<number, Parameters<typeof ByteKit.AutoFetch.HeaderParam>[0]> =
       Reflect.getMetadata(ClientConstants.HeaderParams, target, propertyKey!) ??
       new Map();
-    queryParams.set(parameterIndex, name);
+    queryParams.set(parameterIndex, options);
     Reflect.defineMetadata(
       ClientConstants.HeaderParams,
       queryParams,
