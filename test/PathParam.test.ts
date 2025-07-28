@@ -69,6 +69,20 @@ describe("path param tests", () => {
     expect(headers.has("content-type")).toBeFalsy();
   });
 
+  it("encodes uri components", async () => {
+    const id = "/hello \\world.pdf";
+    const result = await sutFactory(createClass()).basicGet(id);
+    expect(result).toEqual({hello: "world"});
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "GET",
+        url: `http://localhost:3000/test/${encodeURIComponent(id)}`
+      })
+    );
+    const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+    expect(headers.has("content-type")).toBeFalsy();
+  });
+
   for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
     it(`calls fetch for a basic ${method} with PathParam`, async () => {
       const id = crypto.randomUUID();

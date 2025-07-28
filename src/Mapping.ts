@@ -225,7 +225,7 @@ function processArgs(
 
     if (pathParams?.has(i)) {
       const name = pathParams.get(i)!;
-      const replacementPath = path.replaceAll(`{${name}}`, current);
+      const replacementPath = path.replaceAll(`{${name}}`, encodeURIComponent(current));
       if (replacementPath === path) {
         throw new Error(`Path param '${name}' not found in path spec`);
       }
