@@ -40,8 +40,8 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
       | null
     > {
       // @ts-expect-error this is bound to the decorated class instance when called
-      const thisArg = this;
-      const target = Object.getPrototypeOf(thisArg);
+      const self = this;
+      const target = Object.getPrototypeOf(self);
       const clientOptions: IClientOptions = Reflect.getMetadata(
         ClientConstants.ClientOptions,
         target
@@ -54,13 +54,13 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
 
       let adaptor =
         typeof adaptorFactory === "function"
-          ? await adaptorFactory(thisArg)
+          ? await adaptorFactory(self)
           : adaptorArg;
 
       if (!adaptor) {
         adaptor =
           typeof clientOptions.adaptorFactory === "function"
-            ? await clientOptions.adaptorFactory(thisArg)
+            ? await clientOptions.adaptorFactory(self)
             : clientOptions.adaptor;
       }
 
@@ -68,7 +68,7 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         adaptor = globalThis.fetch;
       }
 
-      const base = await (baseUrl ?? clientOptions.baseUrl)(thisArg);
+      const base = await (baseUrl ?? clientOptions.baseUrl)(self);
       const {body, headers, inits, url} = processArgs(
         target,
         propertyKey,
@@ -79,7 +79,7 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         consumes
       );
       const init = await buildRequestInit(
-        thisArg,
+        self,
         interceptors,
         clientOptions,
         inits,
@@ -87,7 +87,7 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
         headers,
         body
       );
-      const id = await executeBefore(thisArg, before, url, init, clientOptions, propertyKey as string, args);
+      const id = await executeBefore(self, before, url, init, clientOptions, propertyKey as string, args);
 
       const cacheName = cache ?? clientOptions.cache;
       const cacheStore = cacheName
@@ -118,11 +118,11 @@ const Mapping: typeof ByteKit.AutoFetch.Mapping =
           resp = await adaptor(request);
         }
       } catch (error) {
-        await executeAfter(thisArg, after, error as Error, id, clientOptions, propertyKey as string, args);
+        await executeAfter(self, after, error as Error, id, clientOptions, propertyKey as string, args);
         throw error;
       }
 
-      await executeAfter(thisArg, after, resp, id, clientOptions, propertyKey as string, args);
+      await executeAfter(self, after, resp, id, clientOptions, propertyKey as string, args);
 
       if (resp.ok || resp.redirected) {
         const contentType = resp.headers.get("content-type");
@@ -239,9 +239,9 @@ function processArgs(
         query[options] = current;
       } else if (
         (options.required ?? true) ||
-        (current !== null && current !== undefined)
+        ((current !== null && current !== undefined) || options.defaultValue)
       ) {
-        query[options.name] = current;
+        query[options.name] = current ?? options.defaultValue;
       }
       processed = true;
     }
@@ -250,15 +250,16 @@ function processArgs(
       const options = headerParams.get(i)!;
       const name = typeof options === "string" ? options : options.name;
       const required = (typeof options === "string" || options.required) ?? true;
+      const defaultValue = typeof options === "string" ? undefined : options.defaultValue;
 
-      if (required || (current !== null && current !== undefined)) {
+      if (required || ((current !== null && current !== undefined) || defaultValue)) {
         if (
           name.toLowerCase() === "content-type" ||
           name.toLowerCase() === "authorization"
         ) {
-          headers.set(name, current);
+          headers.set(name, current ?? defaultValue);
         } else {
-          headers.append(name, current);
+          headers.append(name, current ?? defaultValue);
         }
       }
 
@@ -354,7 +355,7 @@ function processArgs(
 }
 
 async function executeBefore<T>(
-  thisArg: T,
+  self: T,
   before: IClientOptions<T>["before"] | undefined,
   url: URL,
   init: RequestInit,
@@ -363,22 +364,22 @@ async function executeBefore<T>(
   args: any[]
 ) {
   const id = crypto.randomUUID();
-  await before?.(thisArg, url, init, id, methodName, args);
-  await clientOptions.before?.(thisArg, url, init, id, methodName, args);
+  await before?.({self, url, init, id, methodName, args});
+  await clientOptions.before?.({self, url, init, id, methodName, args});
   return id;
 }
 
 async function executeAfter<T>(
-  thisArg: T,
+  self: T,
   after: IClientOptions<T>["after"] | undefined,
-  resp: Error | Response,
+  response: Error | Response,
   id: string,
   clientOptions: IClientOptions<T>,
   methodName: string,
   args: any[]
 ) {
-  await after?.(thisArg, resp, id, methodName, args);
-  await clientOptions.after?.(thisArg, resp, id, methodName, args);
+  await after?.({self, response, id, methodName, args});
+  await clientOptions.after?.({self, response, id, methodName, args});
 }
 
 function mergeHeaders(a?: HeadersInit, b?: HeadersInit): Headers {
@@ -401,7 +402,7 @@ function mergeHeaders(a?: HeadersInit, b?: HeadersInit): Headers {
 }
 
 async function buildRequestInit<T>(
-  thisArg: T,
+  self: T,
   interceptors: IMappingOptions["interceptors"],
   clientOptions: IClientOptions<T>,
   inits: RequestInit[],
@@ -412,7 +413,7 @@ async function buildRequestInit<T>(
   return (
     await Promise.all(
       [...(interceptors ?? []), ...(clientOptions.interceptors ?? [])].map(
-        (item) => item(thisArg as any)
+        (item) => item(self as any)
       )
     )
   )

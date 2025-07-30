@@ -54,6 +54,9 @@ describe("query param tests", () => {
 
       @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
       basicGetOptionalParam(@QueryParam({name: "id", required: false}) id?: string): Promise<{hello: "string"}> {}
+
+      @GetMapping({value: "/test"}) // @ts-expect-error function implementation done by @Mapping decorator
+      basicGetOptionalParamWithDefaultValue(@QueryParam({name: "id", required: false, defaultValue: "hello"}) id?: string | null): Promise<{hello: "string"}> {}
     }
     return MappingTest;
   };
@@ -106,6 +109,32 @@ describe("query param tests", () => {
         expect.objectContaining({
           method: "GET",
           url: `http://localhost:3000/test?id=${id}`
+        })
+      );
+      const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+      expect(headers.has("content-type")).toBeFalsy();
+    });
+
+    it("includes optional param with defaultValue when supplied value is null", async () => {
+      const result = await sutFactory(createClass()).basicGetOptionalParamWithDefaultValue(null);
+      expect(result).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: `http://localhost:3000/test?id=hello`
+        })
+      );
+      const headers: Headers = fetchSpy.mock.calls[0][0].headers;
+      expect(headers.has("content-type")).toBeFalsy();
+    });
+
+    it("includes optional param with defaultValue when supplied value is undefined", async () => {
+      const result = await sutFactory(createClass()).basicGetOptionalParamWithDefaultValue(undefined);
+      expect(result).toEqual({hello: "world"});
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          url: `http://localhost:3000/test?id=hello`
         })
       );
       const headers: Headers = fetchSpy.mock.calls[0][0].headers;

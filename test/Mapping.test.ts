@@ -151,7 +151,7 @@ describe("Mapping", () => {
       const instance = sutFactory(MappingTest);
       await instance.basicGet(id, "hello");
       expect(beforeMethod).toHaveBeenCalled();
-      expect(beforeMethod).toHaveBeenCalledWith(instance, new URL(`/test/${id}`, baseUrl), expect.any(Object), expect.any(String), "basicGet", [id, "hello"]);
+      expect(beforeMethod).toHaveBeenCalledWith({self: instance, url: new URL(`/test/${id}`, baseUrl), init: expect.any(Object), id: expect.any(String), methodName: "basicGet", args: [id, "hello"]});
     });
   });
 
@@ -172,7 +172,7 @@ describe("Mapping", () => {
       const instance = sutFactory(MappingTest);
       await instance.basicGet(id, "hello");
       expect(afterMethod).toHaveBeenCalled();
-      expect(afterMethod).toHaveBeenCalledWith(instance, expect.any(Object), expect.any(String), "basicGet", [id, "hello"]);
+      expect(afterMethod).toHaveBeenCalledWith({self: instance, response: expect.any(Object), id: expect.any(String), methodName: "basicGet", args: [id, "hello"]});
     });
   });
 

@@ -20,33 +20,36 @@ declare module "@bytekit/autofetch" {
 declare namespace ByteKit {
   export namespace AutoFetch {
     export type MaybePromise<T> = T | Promise<T>;
-    export type BoundFunction<T, R> = (thisArg: T) => R;
+    export type BoundFunction<T, R> = (self: T) => R;
+
+    export interface IContext<T> {
+      self: T;
+      id: string;
+      methodName: string;
+      args: any[];
+    }
+
+    export interface IBeforeContext<T> extends IContext<T> {
+      url: URL;
+      init: RequestInit;
+    }
+
+    export interface IAfterContext<T> extends IContext<T> {
+      response: Response | Error;
+    }
 
     export interface IClientOptions<T = Function> {
-      baseUrl(thisArg: T): MaybePromise<string>;
+      baseUrl(self: T): MaybePromise<string>;
       interceptors?: ((thisArg: T) => MaybePromise<RequestInit>)[];
-      before?(
-        thisArg: T,
-        url: URL,
-        init: RequestInit,
-        id: string,
-        methodName: string,
-        args: any[]
-      ): MaybePromise<void>;
-      after?(
-        thisArg: T,
-        response: Response | Error,
-        id: string,
-        methodName: string,
-        args: any[]
-      ): MaybePromise<void>;
+      before?(context: IBeforeContext<T>): MaybePromise<void>;
+      after?(context: IAfterContext<T>): MaybePromise<void>;
       adaptor?: typeof globalThis.fetch;
-      adaptorFactory?: (thisArg: T) => MaybePromise<typeof globalThis.fetch>;
+      adaptorFactory?: (self: T) => MaybePromise<typeof globalThis.fetch>;
       cache?: string;
     }
 
     export interface IMappingOptions<T = Function> extends Omit<IClientOptions<T>, "baseUrl"> {
-      baseUrl?(thisArg: T): MaybePromise<string>;
+      baseUrl?(self: T): MaybePromise<string>;
       method?: HttpMethod;
       value: string;
       blob?: boolean;
@@ -63,6 +66,10 @@ declare namespace ByteKit {
     export interface IExtendedOptions {
       name: string;
       required?: boolean;
+      /**
+       * Value used when the provided value is undefined. Value is not used when the provided value is null.
+       */
+      defaultValue?: any;
     }
 
     export const BodyParam: ParameterDecorator;
